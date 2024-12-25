@@ -1,4 +1,4 @@
-#ABSTRACT
+ABSTRACT
 
 The project aims to create an autonomous AI-integrated rescue vehicle to locate and assist people 
 trapped under landslide debris. Using AI, GPS, image recognition, and obstacle detection, the vehicle 
