@@ -1,0 +1,95 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+import networkx as nx
+from random import randint
+
+# Parameters
+grid_size = (10, 10)
+cell_width = 50
+cell_height = 50
+
+# Load rock and grass images
+rock_image = cv2.imread("C://Users//Agnid//Desktop//driller machine//rock_icon.jpg", cv2.IMREAD_UNCHANGED)  # Load rock icon with transparency
+grass_image = cv2.imread("C://Users//Agnid//Desktop//driller machine//grass_icon.jpg", cv2.IMREAD_UNCHANGED)  # Load grass icon with transparency
+
+# Resize images to fit into the grid cells
+rock_image = cv2.resize(rock_image, (cell_width, cell_height))
+grass_image = cv2.resize(grass_image, (cell_width, cell_height))
+
+# Create a blank image (grid)
+image = np.ones((grid_size[0] * cell_height, grid_size[1] * cell_width, 3), dtype=np.uint8) * 255
+
+# Define colors
+start_color = (0, 0, 255)  # Blue for start
+goal_color = (0, 255, 0)  # Green for goal
+path_color = (0, 255, 0)  # Green for the path
+human_color = (255, 0, 0)  # Blue for human icon
+
+# Define start and end positions
+start = (0, 0)  # Start at the top-left corner
+goal = (grid_size[0] - 1, grid_size[1] - 1)  # Goal at the bottom-right corner
+
+# Add rocks at random locations
+rocks = set()
+while len(rocks) < 30:  # Place 30 rocks randomly
+    r = randint(1, grid_size[0] - 2)
+    c = randint(1, grid_size[1] - 2)
+    rocks.add((r, c))
+
+# Create a grid graph
+graph = nx.grid_2d_graph(grid_size[0], grid_size[1])
+
+# Remove nodes that are rocks
+for rock in rocks:
+    if rock in graph:
+        graph.remove_node(rock)
+
+# Function to draw the grid
+def draw_grid():
+    for y in range(grid_size[0]):
+        for x in range(grid_size[1]):
+            top_left = (x * cell_width, y * cell_height)
+            bottom_right = ((x + 1) * cell_width, (y + 1) * cell_height)
+            if (y, x) == start:
+                cv2.rectangle(image, top_left, bottom_right, start_color, -1)
+            elif (y, x) == goal:
+                cv2.rectangle(image, top_left, bottom_right, goal_color, -1)
+            elif (y, x) in rocks:
+                # Place rock image
+                image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = rock_image
+            else:
+                # Place grass image
+                image[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = grass_image
+
+# Function to find the shortest path using Dijkstra's algorithm
+def find_shortest_path(start, goal):
+    try:
+        path = nx.shortest_path(graph, source=start, target=goal, weight='weight')
+        return path
+    except nx.NetworkXNoPath:
+        return None
+
+# Draw the grid and objects (rocks, start, goal)
+draw_grid()
+
+# Find the shortest path
+path = find_shortest_path(start, goal)
+
+# Draw the shortest path
+if path:
+    for (y, x) in path:
+        top_left = (x * cell_width, y * cell_height)
+        bottom_right = ((x + 1) * cell_width, (y + 1) * cell_height)
+        cv2.rectangle(image, top_left, bottom_right, path_color, -1)
+
+# Draw the human icon (at the end point)
+human_icon = cv2.putText(image.copy(), "Human", (goal[1] * cell_width + 5, goal[0] * cell_height + 25), 
+                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, human_color, 1, cv2.LINE_AA)
+
+# Show the result
+cv2.imshow("Pathfinding with Dijkstra", human_icon)
+cv2.imwrite("output_with_path.jpg", human_icon)  # Save the result
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
